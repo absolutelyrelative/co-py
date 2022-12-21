@@ -1,4 +1,8 @@
+#!/usr/bin/python
+
 from os import strerror
+import sys
+import tempfile
 
 #TODO:
 #CHECK if dest file already exists with os.path.exists(path_to_file)
@@ -48,3 +52,9 @@ def file_cp(source, destination):
         destfile.close()
 
         return condition #TODO: Test
+
+if len(sys.argv) != 1:
+    print("Incorrect usage. Specify source file.")
+else:
+    #tmp = tempfile.NamedTemporaryFile("w+t",delete=False)
+    #sys.argv[i]
