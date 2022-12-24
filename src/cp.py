@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from os import strerror
+import os
 import sys
 import tempfile
 
@@ -53,8 +53,40 @@ def file_cp(source, destination):
 
         return condition #TODO: Test
 
-if len(sys.argv) != 1:
+def writetemplocation(location):
+    try:
+        fullloc = os.getenv('HOME')+ '/cppy/temploc.txt'
+        temporaryfilelocation = open(fullloc, "at")
+        temporaryfilelocation.write(location)
+        temporaryfilelocation.close()
+
+    except IOError as e:
+        print("Error opening source file", strerror(e.errno))
+        temporaryfilelocation.close()
+        
+
+
+#I considered using NamedTemporaryFile but given that I had no elegant way to handle location, I chose to use "my own" temporary file
+if len(sys.argv) - 1 != 1:
     print("Incorrect usage. Specify source file.")
 else:
-    #tmp = tempfile.NamedTemporaryFile("w+t",delete=False)
-    #sys.argv[i]
+    try:
+        if(os.path.exists(sys.argv[1])):
+            writetemplocation(os.path.realpath(sys.argv[1]))
+        else:
+            raise BaseException("Source file does not exist.")
+    except BaseException as e:
+        print(e.__str__())
+    #writetemplocation(sys.argv[1])
+
+
+    """ try:
+        #tmp = tempfile.NamedTemporaryFile("w+t",delete=False)
+        #tmp.name = 'cppysource.tmp'
+        #os.environ["TOCOPY"] = 'a' #not possible outside of the execution environment
+        
+        tmp.write(sys.argv[1])
+    except BaseException as e:
+        print("Error creating temporary file", strerror(e.errno))
+    finally:
+        tmp.close() """
