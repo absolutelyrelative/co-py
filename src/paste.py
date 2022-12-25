@@ -1,13 +1,65 @@
 #!/usr/bin/python
+#The paste.py module is responsible of getting the location of files to copy and pasting it to the specified location (CWD or otherwise)
 
 from os import strerror
 import sys
 import tempfile
+#TODO: Include the possibily of pasting ALL files copied with an argument (ex. -a)
+#TODO: Include the possibily of not removing the contents of the temporary file to allow pasting the files to multiple locations
 
-try:
-    tmp = tempfile.NamedTemporaryFile("w+t",delete=False)
-    tmp.name = 'cppysource.tmp'
-    print(sys.argv[1])
-    tmp.write(sys.argv[1])
-except BaseException as e:
-    print("Error creating temporary file", strerror(e.errno))
+#Function that copies the file in chunks
+#TODO: CHECK if dest file already exists with os.path.exists(path_to_file)
+def file_cp(source, destination):
+    #Opening file to copy
+    try:
+        sourcefile = open(source, "rb")
+
+    except IOError as e:
+        print("Error opening source file", strerror(e.errno))
+        #exit(e.errno)
+        return False
+
+    #Opening file to copy into
+    try:
+        destfile = open(destination, "wb")
+
+    except IOError as e:
+        sourcefile.close()
+        print("Error opening source file", strerror(e.errno))
+        #exit(e.errno)
+        return False
+
+    #Perform copy operation
+    try:
+        #Using bytearray(stream.read()) works but for very large files it will be an issue
+        ctr = 0
+        totalwritten = 0
+        databytearray = bytearray(0xFFFF) #Create a buffer 65536 bytes = 64 kbytes long
+        bytesread = sourcefile.readinto(databytearray)
+        while bytesread > 0: #Great, but if the file is small the null 0s trailing will be copied. readinto() returns the number of bytes read
+            writtenbytes = destfile.write(databytearray[0:bytesread])
+            totalwritten += writtenbytes
+            ctr += 1
+            bytesread = sourcefile.readinto(databytearray)
+        condition = True
+    except IOError as e:
+        print("I/O Error:", strerror(e.errno))
+        condition = False
+    except BufferError as e:
+        print("Buffer Error:", strerror(e.errno))
+        condition = False
+    finally:
+        print(f"{totalwritten} Bytes copied.")
+        print(f"{ctr} buffers used.")
+        sourcefile.close()
+        destfile.close()
+
+        return condition #TODO: Test
+
+def main():
+    if len(sys.argv) - 1 != 1: #No arguments passed, CWD paste mode
+        pass
+    else: #paste to destination
+        pass
+
+main()
