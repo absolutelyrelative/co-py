@@ -2,10 +2,12 @@
 #The paste.py module is responsible of getting the location of files to copy and pasting it to the specified location (CWD or otherwise)
 
 from os import strerror
+import os
 import sys
 import tempfile
 #TODO: Include the possibily of pasting ALL files copied with an argument (ex. -a)
 #TODO: Include the possibily of not removing the contents of the temporary file to allow pasting the files to multiple locations
+#TODO: Include redundant hash check ?
 
 #Function that copies the file in chunks
 #TODO: CHECK if dest file already exists with os.path.exists(path_to_file)
@@ -16,17 +18,19 @@ def file_cp(source, destination):
 
     except IOError as e:
         print("Error opening source file", strerror(e.errno))
-        #exit(e.errno)
         return False
 
     #Opening file to copy into
     try:
-        destfile = open(destination, "wb")
+        headtailtuple = headtailsplit(source)
+        if headtailtuple[1] == None: #If source file is a folder (i.e. leaf is None) raise an exception
+            raise IOError
+        else:
+            destfile = open(os.path.join(destination, headtailtuple[1]), "wb")  #TODO: Check for possible error on Windows due to '\/'
 
     except IOError as e:
         sourcefile.close()
         print("Error opening source file", strerror(e.errno))
-        #exit(e.errno)
         return False
 
     #Perform copy operation
@@ -56,9 +60,41 @@ def file_cp(source, destination):
 
         return condition #TODO: Test
 
+#Fetches the next source file location
+def fetchnext(delete = True):
+    try:
+        fullloc = os.getenv('HOME') + '/.cppytemploc.txt'   #TODO: Test on Windows
+        temporaryfilelocation = open(fullloc, "r+")
+        temporaryfilelocation.seek(0, 0)
+        if delete == True:
+            nextline = temporaryfilelocation.readline().replace('\n', '') #Cursor is moved to next line
+            stream = temporaryfilelocation.readlines() #Read remaining
+            temporaryfilelocation.seek(0) #Reset cursor
+            for line in stream:
+                if nextline not in line:
+                    temporaryfilelocation.write(line)
+            temporaryfilelocation.truncate()
+        else:
+            nextline = temporaryfilelocation.readline().replace('\n', '')
+            
+
+    except FileNotFoundError as e:
+        print("Could not open temporary file location", strerror(e.errno))
+    except IOError as e:
+        print("Error opening source file", strerror(e.errno))
+    finally:
+        temporaryfilelocation.close()
+        return nextline
+
+#This function splits the full path into head and tail (filename)
+def headtailsplit(path):
+    head, tail = os.path.split(path)
+    return head, tail
+
+#If no argument is specified the file is copied to the CWD and the entry deleted from the temporary file
 def main():
     if len(sys.argv) - 1 != 1: #No arguments passed, CWD paste mode
-        pass
+        file_cp(fetchnext(), os.getcwd())
     else: #paste to destination
         pass
 
