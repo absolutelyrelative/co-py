@@ -5,9 +5,9 @@ from os import strerror
 import os
 import sys
 import tempfile
+import hashlib
 #TODO: Include the possibily of pasting ALL files copied with an argument (ex. -a)
 #TODO: Include the possibily of not removing the contents of the temporary file to allow pasting the files to multiple locations
-#TODO: Include redundant hash check ?
 
 #Function that copies the file in chunks
 #TODO: CHECK if dest file already exists with os.path.exists(path_to_file)
@@ -35,16 +35,22 @@ def file_cp(source, destination):
 
     #Perform copy operation
     try:
+        bytearraysize = 0xFFFF
         #Using bytearray(stream.read()) works but for very large files it will be an issue
         ctr = 0
         totalwritten = 0
-        databytearray = bytearray(0xFFFF) #Create a buffer 65536 bytes = 64 kbytes long
+        databytearray = bytearray(bytearraysize) #Create a buffer 65536 bytes = 64 kbytes long
+
+        md5 = hashlib.md5() #Initiate md5 interface
         bytesread = sourcefile.readinto(databytearray)
         while bytesread > 0: #Great, but if the file is small the null 0s trailing will be copied. readinto() returns the number of bytes read
+            md5.update(databytearray[0:bytesread]) #md5.update(a); md5.update(b) = md5.update(a+b), <Python 3.11
             writtenbytes = destfile.write(databytearray[0:bytesread])
             totalwritten += writtenbytes
             ctr += 1
             bytesread = sourcefile.readinto(databytearray)
+
+        print(f"{md5.hexdigest()} buffered md5")
         condition = True
     except IOError as e:
         print("I/O Error:", strerror(e.errno))
@@ -55,6 +61,9 @@ def file_cp(source, destination):
     finally:
         print(f"{totalwritten} Bytes copied.")
         print(f"{ctr} buffers used.")
+        with open(os.path.join(destination, headtailtuple[1]), "rb") as f:
+            md5digest_dest = hashlib.file_digest(f, "md5") #>Python 3.11
+        print(f"{md5digest_dest.hexdigest()} destination md5")
         sourcefile.close()
         destfile.close()
 
